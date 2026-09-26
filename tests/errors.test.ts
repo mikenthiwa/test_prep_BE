@@ -44,6 +44,8 @@ describe('global Problem Details handler', () => {
             title: 'Not Found',
             status: 404,
             detail: 'The requested resource /missing was not found.',
+            instance: '/missing',
+            requestId: response.headers['x-request-id'],
         });
         expect(response.text).not.toContain('private');
     });
@@ -61,6 +63,8 @@ describe('global Problem Details handler', () => {
             title: 'Bad Request',
             status: 400,
             detail: 'Malformed JSON request body.',
+            instance: '/',
+            requestId: response.headers['x-request-id'],
         });
         expect(response.text).not.toContain('SyntaxError');
     });
@@ -75,6 +79,8 @@ describe('global Problem Details handler', () => {
             title: 'Payload Too Large',
             status: 413,
             detail: 'JSON request body is too large.',
+            instance: '/',
+            requestId: response.headers['x-request-id'],
         });
     });
 
@@ -94,6 +100,8 @@ describe('global Problem Details handler', () => {
             title: 'Conflict',
             status: 409,
             detail: 'Employee number already exists.',
+            instance: '/expected',
+            requestId: response.headers['x-request-id'],
         });
         expect(fixture.logs()).toEqual([
             expect.objectContaining({
@@ -125,6 +133,8 @@ describe('global Problem Details handler', () => {
             type: 'about:blank',
             title: 'Internal Server Error',
             status: 500,
+            instance: '/unexpected',
+            requestId: response.headers['x-request-id'],
         });
         expect(response.text).not.toContain('internal secret');
         expect(fixture.logs()).toEqual(

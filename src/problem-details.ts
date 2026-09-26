@@ -7,11 +7,16 @@ export type ProblemDetails = {
     title: string;
     status: number;
     detail?: string;
+    instance?: string;
+    requestId?: string;
 };
+
+export type ProblemDetailsContext = Pick<ProblemDetails, 'instance' | 'requestId'>;
 
 export function createProblemDetails(
     status: number,
     detail?: string,
+    context?: ProblemDetailsContext,
 ): ProblemDetails {
     const title = STATUS_CODES[status];
 
@@ -24,5 +29,7 @@ export function createProblemDetails(
         title,
         status,
         ...(detail === undefined ? {} : { detail }),
+        ...(context?.instance === undefined ? {} : { instance: context.instance }),
+        ...(context?.requestId === undefined ? {} : { requestId: context.requestId }),
     };
 }

@@ -14,9 +14,12 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.use('/{*splat}', (req: Request, res: Response) => {
-    const path = req.originalUrl.split('?')[0];
+    const path = req.originalUrl.split('?')[0] ?? '/';
     res.status(404)
         .type(PROBLEM_JSON_CONTENT_TYPE)
-        .json(createProblemDetails(404, `The requested resource ${path} was not found.`));
+        .json(createProblemDetails(404, `The requested resource ${path} was not found.`, {
+            instance: path,
+            requestId: String(req.id),
+        }));
 });
 app.use(errorHandler);

@@ -50,5 +50,8 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next
         req.log.error({ err: error }, 'Unhandled request error');
     }
 
-    res.status(status).type(PROBLEM_JSON_CONTENT_TYPE).json(createProblemDetails(status, detail));
+    res.status(status).type(PROBLEM_JSON_CONTENT_TYPE).json(createProblemDetails(status, detail, {
+        instance: req.originalUrl.split('?')[0] ?? '/',
+        requestId: String(req.id),
+    }));
 };

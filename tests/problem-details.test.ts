@@ -26,6 +26,19 @@ describe('createProblemDetails', () => {
         });
     });
 
+    test('includes optional request context without requiring detail', () => {
+        expect(createProblemDetails(404, undefined, {
+            instance: '/employees/123',
+            requestId: 'request-123',
+        })).toEqual({
+            type: 'about:blank',
+            title: 'Not Found',
+            status: 404,
+            instance: '/employees/123',
+            requestId: 'request-123',
+        });
+    });
+
     test.each([200, 399, 499, 600, 400.5])(
         'rejects unsupported status %s',
         (status) => {
