@@ -2,7 +2,7 @@ import type { ErrorRequestHandler } from 'express';
 import {
     createProblemDetails,
     PROBLEM_JSON_CONTENT_TYPE,
-} from './problem-details.js';
+} from '../problem-details.js';
 
 export class HttpError extends Error {
     readonly status: number;

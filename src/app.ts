@@ -1,7 +1,7 @@
 import express from 'express';
 import type { Express, Request, Response } from 'express';
-import { errorHandler } from './errors.js';
-import { createHttpLogger, logger } from './logging.js';
+import { errorHandler } from './infrastructure/errors.js';
+import { createHttpLogger, logger } from './infrastructure/logging.js';
 import { createProblemDetails, PROBLEM_JSON_CONTENT_TYPE } from './problem-details.js';
 
 export const app: Express = express();

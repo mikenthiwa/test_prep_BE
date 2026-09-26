@@ -5,8 +5,8 @@ import request from 'supertest';
 import { describe, expect, test, vi } from 'vitest';
 import type { Request, Response } from 'express';
 import { app } from '../src/app.ts';
-import { errorHandler, HttpError } from '../src/errors.ts';
-import { createHttpLogger } from '../src/logging.ts';
+import { errorHandler, HttpError } from '../src/infrastructure/errors.ts';
+import { createHttpLogger } from '../src/infrastructure/logging.ts';
 
 function createErrorTestApp(handler: (app: express.Express) => void) {
     const lines: string[] = [];

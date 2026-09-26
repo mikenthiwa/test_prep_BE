@@ -3,7 +3,7 @@ import express from 'express';
 import pino from 'pino';
 import request from 'supertest';
 import { describe, expect, test } from 'vitest';
-import { createHttpLogger } from '../src/logging.ts';
+import { createHttpLogger } from '../src/infrastructure/logging.ts';
 
 function captureLogs() {
     const lines: string[] = [];
