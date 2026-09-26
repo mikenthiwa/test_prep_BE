@@ -19,7 +19,7 @@
 
 ## Documentation
 
-See [CAPSTONE.md](CAPSTONE.md) for project context.
+See [CAPSTONE.md](CAPSTONE_SPEC.md) for project context.
 
 ## Setup
 
@@ -38,6 +38,11 @@ pnpm install --frozen-lockfile
 ```
 
 ## Testing
+
+Run the test suite once with `pnpm test`, or keep it running during development with `pnpm test:watch`.
+Use `pnpm typecheck:test` to type-check test files and `pnpm exec tsc --noEmit` to type-check application code.
+HTTP tests use Supertest, while database tests use an isolated `mongodb-memory-server` instance.
+The first database test run may download a MongoDB binary; no local MongoDB service is needed for tests.
 
 ## Contribute
 

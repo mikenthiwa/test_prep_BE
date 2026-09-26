@@ -11,10 +11,11 @@
 
 ## Testing
 
-- `pnpm test` is a placeholder that exits with an error; no test runner is configured.
+- Run the suite once with `pnpm test` or watch changes with `pnpm test:watch`.
+- Run `pnpm typecheck:test` to type-check tests.
 - Run `pnpm exec tsc --noEmit` for type checking without generated files.
 - Run `pnpm build` when validating compilation.
-- For meaningful behavior changes, define acceptance requirements and add tests first.
+- For new features and meaningful behavior changes, write a test for the expected behavior, confirm it fails, implement the smallest change that passes it, then refactor.
 - Report checks performed, failures, and checks skipped with reasons.
 
 ## Style
