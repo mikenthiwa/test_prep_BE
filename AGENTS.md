@@ -7,7 +7,7 @@
 - Start development with `pnpm start:dev` (tsx watch).
 - Compile TypeScript with `pnpm build`.
 - `pnpm start:prod` runs `node dist/index.js`.
-- The server reads PORT from the environment and defaults to 3000.
+- The server reads PORT from the environment and defaults to 4000.
 
 ## Testing
 
