@@ -4,9 +4,10 @@
 
 - Use pnpm 10.32.1, as declared in package.json.
 - Install dependencies with `pnpm install --frozen-lockfile`.
-- Start development with `pnpm start:dev` (tsx watch).
+- Start development with `pnpm start:dev` (Node watch with tsx).
 - Compile TypeScript with `pnpm build`.
-- `pnpm start:prod` runs `node dist/index.js`.
+- `pnpm start:prod` runs `node --env-file-if-exists=.env dist/index.js`.
+- The start scripts load `.env` when present; keep credentials out of logs and commits.
 - The server reads PORT from the environment and defaults to 4000.
 
 ## Testing
