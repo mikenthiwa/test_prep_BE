@@ -45,6 +45,20 @@ Startup logs a safe failure reason without printing the URI or credentials: `mis
 
 `GET /health/ready` reports whether Mongoose is connected: it returns `200` with `{ "status": "ready" }` when connected, or `503` Problem Details when disconnected. The endpoint is unversioned and never cached. The HTTP process stays running during a later MongoDB outage while Mongoose reconnects; readiness returns to `200` after reconnection.
 
+### Run the Service Using Docker
+
+Start Docker Desktop, then build and run the API with a local MongoDB service:
+
+```bash
+docker compose up --build --wait
+curl -i http://localhost:4000/health/ready
+docker compose down
+```
+
+The readiness request should return HTTP 200 with `{"status":"ready"}`. If host port 4000 is busy, start with `APP_PORT=4001 docker compose up --build --wait` and check port 4001 instead.
+
+Compose provides the API with `MONGODB_URI=mongodb://mongo:27017/prisma_hr`. Local MongoDB has no authentication and is not published on a host port; use sample data only. Its data persists in a named volume after `docker compose down`. Re-run `docker compose up --build --wait` after changing application code; this setup does not watch source files. When running the image without Compose, supply a MongoDB URI reachable from inside the container through the `MONGODB_URI` environment variable.
+
 ## Testing
 
 Run the test suite once with `pnpm test`, or keep it running during development with `pnpm test:watch`.
