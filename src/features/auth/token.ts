@@ -24,7 +24,11 @@ export function verifyAccessToken(token: string): string | null {
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
     });
-    return typeof claims === 'object' && typeof claims.sub === 'string'
+    return typeof claims === 'object' &&
+      typeof claims.exp === 'number' &&
+      Number.isFinite(claims.exp) &&
+      typeof claims.sub === 'string' &&
+      /^[0-9a-f]{24}$/i.test(claims.sub)
       ? claims.sub
       : null;
   } catch (error) {

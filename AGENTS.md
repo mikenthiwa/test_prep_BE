@@ -17,6 +17,8 @@
 - Run `pnpm exec tsc --noEmit` for type checking without generated files.
 - Run `pnpm build` when validating compilation.
 - For new features and meaningful behavior changes, write a test for the expected behavior, confirm it fails, implement the smallest change that passes it, then refactor.
+- Test observable behavior through the boundary callers use, such as HTTP responses, persisted records, or emitted logs, instead of internal implementation steps.
+- Avoid repeating the same behavior in helper and higher-level tests. Keep direct tests for distinct rules that are impractical to exercise through the caller boundary, and add cases when a feature introduces the behavior rather than speculating about future use.
 - Report checks performed, failures, and checks skipped with reasons.
 
 ## Style

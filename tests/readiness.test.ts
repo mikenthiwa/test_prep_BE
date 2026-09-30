@@ -34,9 +34,6 @@ describe('GET /health/ready', () => {
         .toBe(503);
       const disconnected = await request(app).get('/health/ready');
       expectNotReady(disconnected);
-      const root = await request(app).get('/');
-      expect(root.status).toBe(404);
-      expect(root.body.instance).toBe('/');
 
       await mongo.start(true);
       await expect

@@ -12,7 +12,7 @@ const run = promisify(execFile);
 describe('explicit demo seed command', () => {
   const mongo = useMongoMemoryServer();
 
-  test('is idempotent and keeps credentials out of output', async () => {
+  test('is idempotent without replacing credentials or logging them', async () => {
     const env = {
       ...process.env,
       MONGODB_URI: mongo.uri,
@@ -28,6 +28,24 @@ describe('explicit demo seed command', () => {
         timeout: 15_000,
       });
     const first = await command();
+    await mongoose.connect(mongo.uri);
+    let providerHash: string | undefined;
+    let employerHash: string | undefined;
+    try {
+      providerHash = (
+        await User.findOne({ email: env.SEED_PROVIDER_EMAIL }).select(
+          '+passwordHash'
+        )
+      )?.passwordHash;
+      employerHash = (
+        await User.findOne({ email: env.SEED_EMPLOYER_EMAIL }).select(
+          '+passwordHash'
+        )
+      )?.passwordHash;
+    } finally {
+      await mongoose.disconnect();
+    }
+
     const second = await command();
     const output = first.stdout + first.stderr + second.stdout + second.stderr;
     expect(output).not.toContain(env.SEED_PROVIDER_PASSWORD);
@@ -46,6 +64,10 @@ describe('explicit demo seed command', () => {
       expect(provider?.role).toBe('service_provider_admin');
       expect(employer?.role).toBe('employer_admin');
       expect(employer?.employer).toBeDefined();
+      expect(providerHash).toBeDefined();
+      expect(employerHash).toBeDefined();
+      expect(provider?.passwordHash).toBe(providerHash);
+      expect(employer?.passwordHash).toBe(employerHash);
       expect(
         await compare(env.SEED_PROVIDER_PASSWORD, provider!.passwordHash)
       ).toBe(true);
@@ -72,4 +94,46 @@ describe('explicit demo seed command', () => {
       env.SEED_PROVIDER_PASSWORD
     );
   }, 40_000);
+
+  test('reports a conflicting provider record without exposing credentials', async () => {
+    const uri = new URL(mongo.uri);
+    uri.pathname = '/seed-provider-conflict';
+    const env = {
+      ...process.env,
+      MONGODB_URI: uri.toString(),
+      SEED_PROVIDER_EMAIL: 'provider-conflict@example.com',
+      SEED_PROVIDER_PASSWORD: 'provider-test-password',
+      SEED_EMPLOYER_EMAIL: 'employer-conflict@example.com',
+      SEED_EMPLOYER_PASSWORD: 'employer-test-password',
+    };
+    await mongoose.connect(env.MONGODB_URI);
+    try {
+      const employer = await Employer.create({
+        name: 'Demo Employer',
+        code: 'DEMO',
+      });
+      await User.create({
+        email: env.SEED_PROVIDER_EMAIL,
+        passwordHash: 'existing-hash',
+        role: 'employer_admin',
+        employer: employer._id,
+      });
+    } finally {
+      await mongoose.disconnect();
+    }
+
+    const conflict = await run(
+      process.execPath,
+      ['--import', 'tsx', 'src/persistence/seed.ts'],
+      { env, cwd: process.cwd(), timeout: 15_000 }
+    ).then(
+      () => null,
+      (error: Error & { stdout: string; stderr: string }) => error
+    );
+    expect(conflict).not.toBeNull();
+    const output = conflict!.stdout + conflict!.stderr;
+    expect(output).toContain('provider_conflict');
+    expect(output).not.toContain(env.SEED_PROVIDER_PASSWORD);
+    expect(output).not.toContain(env.SEED_EMPLOYER_PASSWORD);
+  }, 20_000);
 });

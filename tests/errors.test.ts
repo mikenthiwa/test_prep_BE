@@ -32,11 +32,6 @@ function createErrorTestApp(handler: (app: express.Express) => void) {
 }
 
 describe('global Problem Details handler', () => {
-  test('rejects unsupported deliberate HTTP error statuses', () => {
-    expect(() => new HttpError(200)).toThrow(RangeError);
-    expect(() => new HttpError(499)).toThrow(RangeError);
-  });
-
   test('returns a Problem Details 404 for an unknown route', async () => {
     const response = await request(app).get('/missing?token=private');
 

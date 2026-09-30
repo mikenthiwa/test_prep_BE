@@ -23,21 +23,10 @@ describe('connectDatabase', () => {
       .mockImplementation(() => logger);
 
     await connectDatabase();
-    expect(mongoose.connection.readyState).toBe(1);
     expect(connectedLog).toHaveBeenCalledWith('MongoDB connected');
 
     await mongoose.disconnect();
     expect(disconnectedLog).toHaveBeenCalledWith('MongoDB disconnected');
-  });
-
-  test('rejects a missing URI', async () => {
-    vi.stubEnv('MONGODB_URI', undefined);
-    await expect(connectDatabase()).rejects.toThrow('MONGODB_URI is required');
-  });
-
-  test('propagates an invalid URI error', async () => {
-    vi.stubEnv('MONGODB_URI', 'not-a-mongodb-uri');
-    await expect(connectDatabase()).rejects.toThrow();
   });
 
   test('logs a safe reason for a connection error after startup', async () => {

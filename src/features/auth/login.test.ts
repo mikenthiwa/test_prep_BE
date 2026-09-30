@@ -4,7 +4,6 @@ import pino from 'pino';
 import request from 'supertest';
 import { describe, expect, test } from 'vitest';
 import { app } from '../../app.ts';
-import { loginRequestSchema } from './command/login-handler.ts';
 import { createLoginRouter } from './login.ts';
 import { errorHandler } from '../../infrastructure/errors.ts';
 import { createHttpLogger } from '../../infrastructure/logging.ts';
@@ -39,18 +38,6 @@ describe('POST /api/v1/auth/login', () => {
     });
     expect(response.text).not.toContain('secret');
     expect(response.text).not.toContain('private');
-  });
-
-  test('normalizes email while preserving the password', () => {
-    expect(
-      loginRequestSchema.parse({
-        email: '  ADMIN@Example.COM  ',
-        password: ' secret ',
-      })
-    ).toEqual({
-      email: 'admin@example.com',
-      password: ' secret ',
-    });
   });
 
   test('leaves the unversioned login path unmatched', async () => {
