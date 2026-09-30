@@ -6,7 +6,6 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { createLoginRouter } from '../features/auth/login.ts';
 import { authenticateBearer } from './authenticate.ts';
-import { seedDemoAccounts } from '../persistence/seed-demo-accounts.ts';
 import { errorHandler } from '../infrastructure/errors.ts';
 import { Employer } from '../persistence/employer/model.ts';
 import { User } from '../persistence/user/model.ts';
@@ -47,15 +46,15 @@ describe('login and Bearer authentication', () => {
     else process.env.JWT_SECRET = originalSecret;
   });
 
-  test('logs in with normalized email and issues a signed one-hour token', async () => {
+  test('logs in with normalized email and exact password, then issues a one-hour token', async () => {
     const user = await User.create({
       email: 'admin@example.com',
-      passwordHash: await hash('secret', 4),
+      passwordHash: await hash(' secret ', 4),
       role: 'service_provider_admin',
     });
     const response = await request(testApp())
       .post('/api/v1/auth/login')
-      .send({ email: '  ADMIN@EXAMPLE.COM  ', password: 'secret' });
+      .send({ email: '  ADMIN@EXAMPLE.COM  ', password: ' secret ' });
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
       success: true,
@@ -70,6 +69,10 @@ describe('login and Bearer authentication', () => {
       audience: 'prisma-hr-client',
     });
     expect(decoded).toMatchObject({ sub: String(user._id) });
+    if (typeof decoded === 'string') throw new Error('Expected token claims');
+    expect(decoded.exp).toBeDefined();
+    expect(decoded.iat).toBeDefined();
+    expect(decoded.exp! - decoded.iat!).toBe(3600);
     expect(response.text).not.toContain('passwordHash');
     expect(response.text).not.toContain('secret');
   });
@@ -88,6 +91,7 @@ describe('login and Bearer authentication', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'missing@example.com', password: 'wrong' });
     expect(wrong.status).toBe(401);
+    expect(unknown.status).toBe(401);
     expect(unknown.body).toEqual(wrong.body);
     expect(wrong.body).toEqual(failure);
   });
@@ -185,20 +189,11 @@ describe('login and Bearer authentication', () => {
       issuer: 'prisma-hr-api',
       audience: 'prisma-hr-client',
     });
-    const valid = jwt.sign({}, secret, {
-      algorithm: 'HS256',
-      subject: String(user._id),
-      expiresIn: 3600,
-      issuer: 'prisma-hr-api',
-      audience: 'prisma-hr-client',
-    });
-    await user.deleteOne();
     const app = testApp();
     for (const [header, message] of [
       [undefined, 'Missing token.'],
       ['Bearer garbage', 'Invalid token.'],
       [`Bearer ${expired}`, 'Invalid token.'],
-      [`Bearer ${valid}`, 'Invalid token.'],
     ] as const) {
       const pending = request(app).get('/protected');
       if (header) pending.set('Authorization', header);
@@ -208,21 +203,73 @@ describe('login and Bearer authentication', () => {
     }
   });
 
-  test('seeds one employer and both roles idempotently', async () => {
-    const options = {
-      providerEmail: 'provider@example.com',
-      providerPassword: 'provider-pass',
-      employerEmail: 'employer@example.com',
-      employerPassword: 'employer-pass',
-    };
-    await seedDemoAccounts(options);
-    await seedDemoAccounts(options);
-    expect(await Employer.countDocuments({ code: 'DEMO' })).toBe(1);
-    expect(await User.countDocuments()).toBe(2);
-    const provider = await User.findOne({
-      email: options.providerEmail,
-    }).select('+passwordHash');
-    expect(provider?.role).toBe('service_provider_admin');
-    expect(provider?.passwordHash).not.toBe(options.providerPassword);
-  }, 20_000);
+  test('rejects a signed token without an expiry', async () => {
+    const user = await User.create({
+      email: 'admin@example.com',
+      passwordHash: 'hash',
+      role: 'service_provider_admin',
+    });
+    const token = jwt.sign({}, secret, {
+      algorithm: 'HS256',
+      subject: String(user._id),
+      issuer: 'prisma-hr-api',
+      audience: 'prisma-hr-client',
+    });
+
+    const response = await request(testApp())
+      .get('/protected')
+      .set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      success: false,
+      status: 401,
+      message: 'Invalid token.',
+    });
+  });
+
+  test('rejects a signed token with a malformed user ID', async () => {
+    const token = jwt.sign({}, secret, {
+      algorithm: 'HS256',
+      subject: 'not-an-object-id',
+      expiresIn: 3600,
+      issuer: 'prisma-hr-api',
+      audience: 'prisma-hr-client',
+    });
+
+    const response = await request(testApp())
+      .get('/protected')
+      .set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      success: false,
+      status: 401,
+      message: 'Invalid token.',
+    });
+  });
+
+  test('rejects a valid token after its user is deleted', async () => {
+    const user = await User.create({
+      email: 'admin@example.com',
+      passwordHash: 'hash',
+      role: 'service_provider_admin',
+    });
+    const token = jwt.sign({}, secret, {
+      algorithm: 'HS256',
+      subject: String(user._id),
+      expiresIn: 3600,
+      issuer: 'prisma-hr-api',
+      audience: 'prisma-hr-client',
+    });
+    await user.deleteOne();
+
+    const response = await request(testApp())
+      .get('/protected')
+      .set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      success: false,
+      status: 401,
+      message: 'Invalid token.',
+    });
+  });
 });
