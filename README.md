@@ -47,7 +47,7 @@ Startup logs a safe failure reason without printing the URI or credentials: `mis
 
 ### Run the Service Using Docker
 
-Start Docker Desktop, then build and run the API with a local MongoDB service:
+Set `JWT_SECRET` to a random value of at least 32 characters in your shell or the ignored `.env` file. Docker Compose passes it to the app container; the image does not contain your `.env` file. Then start Docker Desktop and run the API with a local MongoDB service:
 
 ```bash
 docker compose up --build --wait
@@ -60,6 +60,12 @@ The readiness request should return HTTP 200 with `{"status":"ready"}`. If host 
 Compose provides the API with `MONGODB_URI=mongodb://mongo:27017/prisma_hr`. Local MongoDB has no authentication and is not published on a host port; use sample data only. Its data persists in a named volume after `docker compose down`. Re-run `docker compose up --build --wait` after changing application code; this setup does not watch source files. When running the image without Compose, supply a MongoDB URI reachable from inside the container through the `MONGODB_URI` environment variable.
 
 ## Testing
+
+### Local authentication
+
+Set `JWT_SECRET` in the environment or `.env` to a random value of at least 32 characters. The server refuses to start without it. `POST /api/v1/auth/login` accepts an email and password and returns a one-hour Bearer token in `data.accessToken`. Send it as `Authorization: Bearer <token>` to routes that use the authentication middleware. Wrong passwords and unknown accounts return the same generic 401 response. The login route allows five requests per client IP per 15 minutes; its in-memory limit resets on restart and is not shared across server instances. Configure trusted proxies and a shared rate-limit store before running multiple instances behind a proxy.
+
+To create the two local demo users and one demo employer, set `SEED_PROVIDER_EMAIL`, `SEED_PROVIDER_PASSWORD`, `SEED_EMPLOYER_EMAIL`, and `SEED_EMPLOYER_PASSWORD` in `.env`, then run `pnpm seed:dev`. The command may be run again without changing existing matching accounts. It fails if an existing account has a conflicting role or employer assignment. Never commit `.env` or use demo credentials in production.
 
 Run the test suite once with `pnpm test`, or keep it running during development with `pnpm test:watch`.
 Use `pnpm typecheck:test` to type-check test files and `pnpm exec tsc --noEmit` to type-check application code.

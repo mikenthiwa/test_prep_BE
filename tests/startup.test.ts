@@ -3,8 +3,12 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { describe, expect, test } from 'vitest';
 import { useMongoMemoryServer } from './support/mongo.ts';
 
-async function runStartup(uri?: string) {
+async function runStartup(
+  uri?: string,
+  jwtSecret = 'test-only-secret-longer-than-thirty-two-characters'
+) {
   const env: NodeJS.ProcessEnv = { ...process.env, PORT: '0' };
+  env.JWT_SECRET = jwtSecret;
   delete env.MONGODB_URI;
   if (uri !== undefined) env.MONGODB_URI = uri;
 
@@ -43,6 +47,14 @@ async function runStartup(uri?: string) {
 
 describe('server startup', () => {
   const mongo = useMongoMemoryServer();
+
+  test('does not start with a short JWT secret', async () => {
+    const result = await runStartup(mongo.uri, 'short');
+    expect(result.exitCode).toBe(1);
+    expect(result.output).toContain('"reason":"invalid_jwt_secret"');
+    expect(result.output).not.toContain('short');
+    expect(result.output).not.toContain('Server is running');
+  }, 15_000);
 
   test('connects before accepting HTTP requests', async () => {
     const result = await runStartup(mongo.uri);
