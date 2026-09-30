@@ -1,6 +1,7 @@
 import express from 'express';
 import type { Express, Request, Response } from 'express';
 import mongoose from 'mongoose';
+import { loginRouter } from './features/auth/login.js';
 import { errorHandler } from './infrastructure/errors.js';
 import { createHttpLogger, logger } from './infrastructure/logging.js';
 import {
@@ -31,6 +32,8 @@ app.get('/health/ready', (req: Request, res: Response) => {
       })
     );
 });
+
+app.use('/api/v1', loginRouter);
 
 app.use('/{*splat}', (req: Request, res: Response) => {
   const path = req.originalUrl.split('?')[0] ?? '/';
